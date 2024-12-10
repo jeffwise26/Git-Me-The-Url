@@ -8,11 +8,16 @@
 
     <resource-bundle>messages.MyBundle</resource-bundle>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.jeffwise26.gitmetheurl.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-    </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.jeffwise26.gitmetheurl.listeners.MyApplicationActivationListener" topic="com.intellij.openapi.application.ApplicationActivationListener"/>
-    </applicationListeners>
+    <actions>
+        <action
+                id="com.github.jeffwise26.gitmetheurl.action.PrintMessageAction"
+                class="com.github.jeffwise26.gitmetheurl.action.PrintMessageAction"
+                text="Git Me The Url"
+                description="Copy git url for the current file to the clipboard"
+                icon="SdkIcons.Sdk_default_icon">
+            <keyboard-shortcut
+                    keymap="$default"
+                    first-keystroke="ctrl alt G"/>
+        </action>
+    </actions>
 </idea-plugin>
