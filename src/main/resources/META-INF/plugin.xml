@@ -10,8 +10,8 @@
 
     <actions>
         <action
-                id="com.github.jeffwise26.gitmetheurl.action.PrintMessageAction"
-                class="com.github.jeffwise26.gitmetheurl.action.PrintMessageAction"
+                id="com.github.jeffwise26.gitmetheurl.action.GitMeTheUrlAction"
+                class="com.github.jeffwise26.gitmetheurl.action.GitMeTheUrlAction"
                 text="Git Me The Url"
                 description="Copy git url for the current file to the clipboard"
                 icon="SdkIcons.Sdk_default_icon">

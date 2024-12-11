@@ -1,6 +1,6 @@
 package com.github.jeffwise26.gitmetheurl
 
-import com.github.jeffwise26.gitmetheurl.action.PrintMessageAction
+import com.github.jeffwise26.gitmetheurl.action.GitMeTheUrlAction
 import com.intellij.testFramework.TestDataPath
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 
@@ -8,6 +8,6 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase
 class MyPluginTest : BasePlatformTestCase() {
 
     fun test() {
-      val action = PrintMessageAction()
+      val action = GitMeTheUrlAction()
     }
 }

@@ -8,7 +8,7 @@ import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import javax.swing.Timer
 
-class PrintMessageAction : AnAction() {
+class GitMeTheUrlAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val notification = Notification(
             MyBundle.message("notificationGroup"),
