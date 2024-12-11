@@ -10,5 +10,4 @@ class MyPluginTest : BasePlatformTestCase() {
     fun test() {
       val action = PrintMessageAction()
     }
-
 }
