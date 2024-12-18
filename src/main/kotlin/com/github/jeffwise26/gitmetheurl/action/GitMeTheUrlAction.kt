@@ -6,10 +6,14 @@ import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.ide.CopyPasteManager
+import java.awt.datatransfer.StringSelection
 import javax.swing.Timer
 
-class PrintMessageAction : AnAction() {
+class GitMeTheUrlAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
+        val gitUrl = "todo"
+        CopyPasteManager.getInstance().setContents(StringSelection(gitUrl));
         val notification = Notification(
             MyBundle.message("notificationGroup"),
             MyBundle.message("notificationMessage"),
