@@ -17,52 +17,60 @@ import java.awt.datatransfer.StringSelection
 import javax.swing.Timer
 
 class GitMeTheUrlAction : AnAction() {
+    companion object {
+        val GROUP = MyBundle.message("notificationGroup")
+    }
+
     override fun actionPerformed(e: AnActionEvent) {
         val file = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE)
         file ?: return
         val project = e.project
         project ?: return
+        val gitUrl = gitGitHubUrl(project, file)
         val notification: Notification =
-            try {
-                val gitUrl = gitGitHubUrl(project, file)
-                CopyPasteManager.getInstance().setContents(StringSelection(gitUrl));
-                Notification(
-                    MyBundle.message("notificationGroup"),
-                    MyBundle.message("notificationMessage"),
-                    NotificationType.INFORMATION
-                )
-            } catch (e: GitUrlParseError) {
-                Notification(
-                    MyBundle.message("notificationGroup"),
-                    // todo bundle
-                    e.message!!,
-                    NotificationType.ERROR
-                )
-            } catch (e: GitUrlParseWarn) {
-                Notification(
-                    MyBundle.message("notificationGroup"),
-                    // todo bundle
-                    e.message!!,
-                    NotificationType.WARNING
-                )
+            when(gitUrl) {
+                is GitHubUrlSuccess -> {
+                    CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url));
+                    Notification(
+                        GROUP,
+                        gitUrl.message,
+                        NotificationType.INFORMATION
+                    )
+                }
+                is GitHubUrlFail -> {
+                    Notification(
+                        GROUP,
+                        gitUrl.message,
+                        NotificationType.ERROR
+                    )
+                }
+
+                is GitHubUrlWarn -> {
+                    Notification(
+                        GROUP,
+                        gitUrl.message,
+                        NotificationType.WARNING
+                    )
+                }
             }
         Notifications.Bus.notify(notification)
-        Timer(1000) { notification.expire() }.start()
+        Timer(1000)
+        { notification.expire() }.start()
     }
 
-    private fun gitGitHubUrl(project: Project, file: VirtualFile): String {
+    private fun gitGitHubUrl(project: Project, file: VirtualFile): GitHubUrl {
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
-        editor ?: throw GitUrlParseError(MyBundle.message("notificationErrorEditor"))
+        editor ?: return GitHubUrlFail(MyBundle.message("notificationErrorEditor"))
         val currentFile = FileDocumentManager.getInstance().getFile(editor.document)
         val repository = GitUtil.getRepositoryManager(project).getRepositoryForFileQuick(currentFile)
 
         val remoteUrl = repository?.remotes?.firstOrNull()?.firstUrl
-        remoteUrl ?: throw GitUrlParseError(MyBundle.message("notificationErrorRemote"))
+        remoteUrl ?: return GitHubUrlFail(MyBundle.message("notificationErrorRemote"))
 
         val lineNumber = editor.caretModel.logicalPosition.line
 
         val basePath = project.basePath
-        basePath ?: throw GitUrlParseError(MyBundle.message("notificationErrorProject"))
+        basePath ?: return GitHubUrlFail(MyBundle.message("notificationErrorProject"))
 
         val filePath = file.path.substring(basePath.length)
 
@@ -73,7 +81,7 @@ class GitMeTheUrlAction : AnAction() {
             it.name.endsWith("/$currentBranch")
         }
         if (!isCurrentBranchOnRemote) {
-            throw GitUrlParseError(MyBundle.message("notificationWarnRemote"))
+            return GitHubUrlFail(MyBundle.message("notificationWarnRemote"))
         }
 
         val adjustedBase = remoteUrl
@@ -82,9 +90,20 @@ class GitMeTheUrlAction : AnAction() {
             .replace("git@", "https://www.")
         val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
 
-        return githubUrl
+        return GitHubUrlSuccess(githubUrl, MyBundle.message("notificationMessage"))
     }
 }
 
-class GitUrlParseError(message: String) : Throwable(message)
-class GitUrlParseWarn(message: String) : Throwable(message)
+sealed interface GitHubUrl
+data class GitHubUrlSuccess(
+    val url: String,
+    val message: String
+) : GitHubUrl
+
+data class GitHubUrlFail(
+    val message: String,
+) : GitHubUrl
+
+data class GitHubUrlWarn(
+    val message: String,
+) : GitHubUrl
