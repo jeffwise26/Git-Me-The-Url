@@ -38,12 +38,19 @@ class GitMeTheUrlAction : AnAction() {
                     e.message!!,
                     NotificationType.ERROR
                 )
+            } catch (e: GitUrlParseWarn) {
+                Notification(
+                    MyBundle.message("notificationGroup"),
+                    // todo bundle
+                    e.message!!,
+                    NotificationType.WARNING
+                )
             }
         Notifications.Bus.notify(notification)
         Timer(1000) { notification.expire() }.start()
     }
 
-    private fun gitGitHubUrl(project: Project, file: VirtualFile): String? {
+    private fun gitGitHubUrl(project: Project, file: VirtualFile): String {
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
         editor ?: throw GitUrlParseError("There is no editor environment")
         val currentFile = FileDocumentManager.getInstance().getFile(editor.document)
@@ -59,9 +66,19 @@ class GitMeTheUrlAction : AnAction() {
 
         val filePath = file.path.substring(basePath.length)
 
+        val currentBranch = repository.currentBranchName
+
+        val remoteBranches = repository.branches.remoteBranches
+        val isCurrentBranchOnRemote = remoteBranches.any {
+            it.name.endsWith("/$currentBranch")
+        }
+        if (!isCurrentBranchOnRemote) {
+            throw GitUrlParseError("Current branch is not on remote, url may not work")
+        }
+
         val adjustedBase = remoteUrl
             .replace("github.com:", "github.com/")
-            .replace(".git", "/blob/${repository.currentBranchName}")
+            .replace(".git", "/blob/$currentBranch")
             .replace("git@", "https://www.")
         val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
 
@@ -70,3 +87,4 @@ class GitMeTheUrlAction : AnAction() {
 }
 
 class GitUrlParseError(message: String) : Throwable(message)
+class GitUrlParseWarn(message: String) : Throwable(message)
