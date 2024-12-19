@@ -45,9 +45,11 @@ class GitMeTheUrlAction : AnAction() {
 
         val filePath = file.path.substring(project.basePath!!.length)
 
+        val branch = repository!!.currentBranchName
+
         val adjustedBase = remoteUrl
             ?.replace("github.com:", "github.com/")
-            ?.replace(".git", "/blob/main")
+            ?.replace(".git", "/blob/$branch")
             ?.replace("git@", "https://www.")
         val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
 
