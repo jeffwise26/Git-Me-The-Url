@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.qodana) // Gradle Qodana Plugin
     alias(libs.plugins.kover) // Gradle Kover Plugin
 }
+
 group = providers.gradleProperty("pluginGroup").get()
 version = providers.gradleProperty("pluginVersion").get()
 
