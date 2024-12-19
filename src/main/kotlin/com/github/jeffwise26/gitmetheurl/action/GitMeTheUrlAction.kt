@@ -52,17 +52,17 @@ class GitMeTheUrlAction : AnAction() {
 
     private fun gitGitHubUrl(project: Project, file: VirtualFile): String {
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
-        editor ?: throw GitUrlParseError("There is no editor environment")
+        editor ?: throw GitUrlParseError(MyBundle.message("notificationErrorEditor"))
         val currentFile = FileDocumentManager.getInstance().getFile(editor.document)
         val repository = GitUtil.getRepositoryManager(project).getRepositoryForFileQuick(currentFile)
 
         val remoteUrl = repository?.remotes?.firstOrNull()?.firstUrl
-        remoteUrl ?: throw GitUrlParseError("Repository does not have remotes")
+        remoteUrl ?: throw GitUrlParseError(MyBundle.message("notificationErrorRemote"))
 
         val lineNumber = editor.caretModel.logicalPosition.line
 
         val basePath = project.basePath
-        basePath ?: throw GitUrlParseError("Project does not have a base path")
+        basePath ?: throw GitUrlParseError(MyBundle.message("notificationErrorProject"))
 
         val filePath = file.path.substring(basePath.length)
 
@@ -73,7 +73,7 @@ class GitMeTheUrlAction : AnAction() {
             it.name.endsWith("/$currentBranch")
         }
         if (!isCurrentBranchOnRemote) {
-            throw GitUrlParseError("Current branch is not on remote, url may not work")
+            throw GitUrlParseError(MyBundle.message("notificationWarnRemote"))
         }
 
         val adjustedBase = remoteUrl
