@@ -36,8 +36,21 @@ class GitMeTheUrlAction : AnAction() {
     fun gitGitHubUrl(project: Project, file: VirtualFile): String {
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
 
-        val currentFile = FileDocumentManager.getInstance().getFile(editor!!.getDocument())
+        val currentFile = FileDocumentManager.getInstance().getFile(editor!!.document)
         val repository = GitUtil.getRepositoryManager(project).getRepositoryForFileQuick(currentFile)
-        return repository!!.remotes.joinToString(",")
+
+        val remoteUrl = repository?.remotes?.firstOrNull()?.firstUrl
+
+        val lineNumber = editor.caretModel.logicalPosition.line
+
+        val filePath = file.path.substring(project.basePath!!.length)
+
+        val adjustedBase = remoteUrl
+            ?.replace("github.com:", "github.com/")
+            ?.replace(".git", "/blob/main")
+            ?.replace("git@", "https://www.")
+        val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
+
+        return githubUrl
     }
 }
