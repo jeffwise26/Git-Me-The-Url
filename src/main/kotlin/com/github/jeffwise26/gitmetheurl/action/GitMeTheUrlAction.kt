@@ -22,43 +22,53 @@ class GitMeTheUrlAction : AnAction() {
     }
 
     override fun actionPerformed(e: AnActionEvent) {
-        val file = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE)
-        file ?: return
-        val project = e.project
-        project ?: return
-        val gitUrl = gitGitHubUrl(project, file)
-        val notification: Notification =
-            when(gitUrl) {
-                is GitHubUrlSuccess -> {
-                    CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url));
-                    Notification(
-                        GROUP,
-                        gitUrl.message,
-                        NotificationType.INFORMATION
-                    )
-                }
-                is GitHubUrlFail -> {
-                    Notification(
-                        GROUP,
-                        gitUrl.message,
-                        NotificationType.ERROR
-                    )
-                }
+        val gitUrl = gitGitHubUrl(
+            e.project,
+            e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.VIRTUAL_FILE)
+        )
+        val notification: Notification = buildNotification(gitUrl)
+        when (gitUrl) {
+            is GitHubUrlSuccess -> CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url))
+            else -> {}
+        }
 
-                is GitHubUrlWarn -> {
-                    Notification(
-                        GROUP,
-                        gitUrl.message,
-                        NotificationType.WARNING
-                    )
-                }
-            }
         Notifications.Bus.notify(notification)
         Timer(1000)
         { notification.expire() }.start()
     }
 
-    private fun gitGitHubUrl(project: Project, file: VirtualFile): GitHubUrl {
+    private fun buildNotification(gitUrl: GitHubUrl) =
+        when (gitUrl) {
+            is GitHubUrlSuccess -> {
+                CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url));
+                Notification(
+                    GROUP,
+                    gitUrl.message,
+                    NotificationType.INFORMATION
+                )
+            }
+
+            is GitHubUrlFail -> {
+                Notification(
+                    GROUP,
+                    gitUrl.message,
+                    NotificationType.ERROR
+                )
+            }
+
+            is GitHubUrlWarn -> {
+                Notification(
+                    GROUP,
+                    gitUrl.message,
+                    NotificationType.WARNING
+                )
+            }
+        }
+
+    private fun gitGitHubUrl(project: Project?, file: VirtualFile?): GitHubUrl {
+        file ?: return GitHubUrlFail(MyBundle.message("notificationErrorFile"))
+        project ?: return GitHubUrlFail(MyBundle.message("notificationErrorProject"))
+
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
         editor ?: return GitHubUrlFail(MyBundle.message("notificationErrorEditor"))
         val currentFile = FileDocumentManager.getInstance().getFile(editor.document)
@@ -70,7 +80,7 @@ class GitMeTheUrlAction : AnAction() {
         val lineNumber = editor.caretModel.logicalPosition.line
 
         val basePath = project.basePath
-        basePath ?: return GitHubUrlFail(MyBundle.message("notificationErrorProject"))
+        basePath ?: return GitHubUrlFail(MyBundle.message("notificationErrorProjectBasePath"))
 
         val filePath = file.path.substring(basePath.length)
 
