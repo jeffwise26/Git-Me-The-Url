@@ -22,37 +22,51 @@ class GitMeTheUrlAction : AnAction() {
         file ?: return
         val project = e.project
         project ?: return
-        val gitUrl = gitGitHubUrl(project, file)
-        CopyPasteManager.getInstance().setContents(StringSelection(gitUrl));
-        val notification = Notification(
-            MyBundle.message("notificationGroup"),
-            MyBundle.message("notificationMessage"),
-            NotificationType.INFORMATION
-        )
+        val notification: Notification =
+            try {
+                val gitUrl = gitGitHubUrl(project, file)
+                CopyPasteManager.getInstance().setContents(StringSelection(gitUrl));
+                Notification(
+                    MyBundle.message("notificationGroup"),
+                    MyBundle.message("notificationMessage"),
+                    NotificationType.INFORMATION
+                )
+            } catch (e: GitUrlParseError) {
+                Notification(
+                    MyBundle.message("notificationGroup"),
+                    // todo bundle
+                    e.message!!,
+                    NotificationType.ERROR
+                )
+            }
         Notifications.Bus.notify(notification)
         Timer(1000) { notification.expire() }.start()
     }
 
-    fun gitGitHubUrl(project: Project, file: VirtualFile): String {
+    private fun gitGitHubUrl(project: Project, file: VirtualFile): String? {
         val editor: Editor? = FileEditorManager.getInstance(project).selectedTextEditor
-
-        val currentFile = FileDocumentManager.getInstance().getFile(editor!!.document)
+        editor ?: throw GitUrlParseError("There is no editor environment")
+        val currentFile = FileDocumentManager.getInstance().getFile(editor.document)
         val repository = GitUtil.getRepositoryManager(project).getRepositoryForFileQuick(currentFile)
 
         val remoteUrl = repository?.remotes?.firstOrNull()?.firstUrl
+        remoteUrl ?: throw GitUrlParseError("Repository does not have remotes")
 
         val lineNumber = editor.caretModel.logicalPosition.line
 
-        val filePath = file.path.substring(project.basePath!!.length)
+        val basePath = project.basePath
+        basePath ?: throw GitUrlParseError("Project does not have a base path")
 
-        val branch = repository!!.currentBranchName
+        val filePath = file.path.substring(basePath.length)
 
         val adjustedBase = remoteUrl
-            ?.replace("github.com:", "github.com/")
-            ?.replace(".git", "/blob/$branch")
-            ?.replace("git@", "https://www.")
+            .replace("github.com:", "github.com/")
+            .replace(".git", "/blob/${repository.currentBranchName}")
+            .replace("git@", "https://www.")
         val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
 
         return githubUrl
     }
 }
+
+class GitUrlParseError(message: String) : Throwable(message)
