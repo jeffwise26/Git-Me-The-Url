@@ -17,9 +17,7 @@ import java.awt.datatransfer.StringSelection
 import javax.swing.Timer
 
 class GitMeTheUrlAction : AnAction() {
-    companion object {
-        val GROUP = MyBundle.message("notificationGroup")
-    }
+
 
     override fun actionPerformed(e: AnActionEvent) {
         val gitUrl = gitGitHubUrl(
@@ -29,7 +27,7 @@ class GitMeTheUrlAction : AnAction() {
         val notification: Notification = buildNotification(gitUrl)
         when (gitUrl) {
             is GitHubUrlSuccess -> CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url))
-            else -> {}
+            else -> Unit
         }
 
         Notifications.Bus.notify(notification)
@@ -37,33 +35,18 @@ class GitMeTheUrlAction : AnAction() {
         { notification.expire() }.start()
     }
 
-    private fun buildNotification(gitUrl: GitHubUrl) =
-        when (gitUrl) {
-            is GitHubUrlSuccess -> {
-                CopyPasteManager.getInstance().setContents(StringSelection(gitUrl.url));
-                Notification(
-                    GROUP,
-                    gitUrl.message,
-                    NotificationType.INFORMATION
-                )
-            }
-
-            is GitHubUrlFail -> {
-                Notification(
-                    GROUP,
-                    gitUrl.message,
-                    NotificationType.ERROR
-                )
-            }
-
-            is GitHubUrlWarn -> {
-                Notification(
-                    GROUP,
-                    gitUrl.message,
-                    NotificationType.WARNING
-                )
-            }
+    private fun buildNotification(gitUrl: GitHubUrl): Notification {
+        val notificationType = when (gitUrl) {
+            is GitHubUrlSuccess -> NotificationType.INFORMATION
+            is GitHubUrlFail -> NotificationType.ERROR
+            is GitHubUrlWarn -> NotificationType.WARNING
         }
+        return Notification(
+            GROUP,
+            gitUrl.message,
+            notificationType
+        )
+    }
 
     private fun gitGitHubUrl(project: Project?, file: VirtualFile?): GitHubUrl {
         file ?: return GitHubUrlFail(MyBundle.message("notificationErrorFile"))
@@ -102,18 +85,25 @@ class GitMeTheUrlAction : AnAction() {
 
         return GitHubUrlSuccess(githubUrl, MyBundle.message("notificationMessage"))
     }
+
+    companion object {
+        val GROUP = MyBundle.message("notificationGroup")
+    }
 }
 
-sealed interface GitHubUrl
+sealed class GitHubUrl(
+    open val message: String,
+)
+
 data class GitHubUrlSuccess(
     val url: String,
-    val message: String
-) : GitHubUrl
+    override val message: String
+) : GitHubUrl(message)
 
 data class GitHubUrlFail(
-    val message: String,
-) : GitHubUrl
+    override val message: String,
+) : GitHubUrl(message)
 
 data class GitHubUrlWarn(
-    val message: String,
-) : GitHubUrl
+    override val message: String,
+) : GitHubUrl(message)
