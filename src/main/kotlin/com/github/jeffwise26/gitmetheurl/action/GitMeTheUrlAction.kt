@@ -34,18 +34,15 @@ class GitMeTheUrlAction : AnAction() {
         { notification.expire() }.start()
     }
 
-    private fun buildNotification(gitUrl: GitHubUrl): Notification {
-        val notificationType = when (gitUrl) {
+    private fun buildNotification(gitUrl: GitHubUrl) = Notification(
+        MyBundle.message("notificationGroup"),
+        gitUrl.message,
+        when (gitUrl) {
+            is GitHubUrlWarn -> NotificationType.WARNING
             is GitHubUrlSuccess -> NotificationType.INFORMATION
             is GitHubUrlFail -> NotificationType.ERROR
-            is GitHubUrlWarn -> NotificationType.WARNING
         }
-        return Notification(
-            MyBundle.message("notificationGroup"),
-            gitUrl.message,
-            notificationType
-        )
-    }
+    )
 
     private fun gitGitHubUrl(project: Project?, file: VirtualFile?): GitHubUrl {
         file ?: return GitHubUrlFail(MyBundle.message("notificationErrorFile"))
@@ -98,8 +95,8 @@ sealed class GitHubUrl(
     open val message: String,
 )
 
-data class GitHubUrlSuccess(
-    val url: String,
+open class GitHubUrlSuccess(
+    open val url: String,
     override val message: String
 ) : GitHubUrl(message)
 
@@ -107,7 +104,7 @@ data class GitHubUrlFail(
     override val message: String,
 ) : GitHubUrl(message)
 
-data class GitHubUrlWarn(
-    val url: String,
+class GitHubUrlWarn(
+    override val url: String,
     override val message: String,
-) : GitHubUrl(message)
+) : GitHubUrlSuccess(url, message)
