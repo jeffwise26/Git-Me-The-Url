@@ -18,7 +18,6 @@ import javax.swing.Timer
 
 class GitMeTheUrlAction : AnAction() {
 
-
     override fun actionPerformed(e: AnActionEvent) {
         val gitUrl = gitGitHubUrl(
             e.project,
@@ -42,7 +41,7 @@ class GitMeTheUrlAction : AnAction() {
             is GitHubUrlWarn -> NotificationType.WARNING
         }
         return Notification(
-            GROUP,
+            MyBundle.message("notificationGroup"),
             gitUrl.message,
             notificationType
         )
@@ -69,25 +68,29 @@ class GitMeTheUrlAction : AnAction() {
 
         val currentBranch = repository.currentBranchName
 
-        val remoteBranches = repository.branches.remoteBranches
-        val isCurrentBranchOnRemote = remoteBranches.any {
-            it.name.endsWith("/$currentBranch")
-        }
-        if (!isCurrentBranchOnRemote) {
-            return GitHubUrlFail(MyBundle.message("notificationWarnRemote"))
-        }
-
         val adjustedBase = remoteUrl
-            .replace("github.com:", "github.com/")
-            .replace(".git", "/blob/$currentBranch")
-            .replace("git@", "https://www.")
+            .replace(GITHUB_COLON, GITHUB_SLASH)
+            .replace(GIT_DIR, "$BLOB_DIR$currentBranch")
+            .replace(GIT_AT, HTTP_PREFIX)
         val githubUrl = "$adjustedBase$filePath#L${lineNumber + 1}"
 
-        return GitHubUrlSuccess(githubUrl, MyBundle.message("notificationMessage"))
+        val isCurrentBranchOnRemote = repository.branches.remoteBranches.any {
+            it.name.endsWith("/$currentBranch")
+        }
+
+        return when (isCurrentBranchOnRemote) {
+            true -> GitHubUrlSuccess(githubUrl, MyBundle.message("notificationMessage"))
+            false -> GitHubUrlWarn(githubUrl, MyBundle.message("notificationWarnRemote"))
+        }
     }
 
     companion object {
-        val GROUP = MyBundle.message("notificationGroup")
+        const val GIT_AT = "git@"
+        const val HTTP_PREFIX = "https://www."
+        const val GITHUB_COLON = "github.com:"
+        const val GITHUB_SLASH = "github.com/"
+        const val GIT_DIR = ".git"
+        const val BLOB_DIR = "/blob/"
     }
 }
 
@@ -105,5 +108,6 @@ data class GitHubUrlFail(
 ) : GitHubUrl(message)
 
 data class GitHubUrlWarn(
+    val url: String,
     override val message: String,
 ) : GitHubUrl(message)
